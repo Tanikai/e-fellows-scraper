@@ -8,10 +8,11 @@ class Scraper:
     FDownloadPath = ''
     
     def __init__(self, ADatabasename, ADownloadpath):
+        LRootURL = 'https://heise.extdb.e-fellows.net/zeitschriften'        
         if ADatabasename.upper() == 'CT':
-            self.FDBLink = 'https://heise.extdb.e-fellows.net/zeitschriften/ct/artikel-archiv'
+            self.FDBLink = LRootURL + '/ct/artikel-archiv?dir=desc&mode=list&order=publishing_date&p='
         elif ADatabasename.upper() == 'IX':
-            self.FDBLink = 'https://heise.extdb.e-fellows.net/zeitschriften/ix/artikel-archiv'
+            self.FDBLink = LRootURL + '/ix/?dir=desc&mode=list&order=publishing_date&p='
         else:
             raise ValueError('Invalid database name: ' + ADatabasename)
         
@@ -47,7 +48,7 @@ class Scraper:
         
         LErrorResponses = []
         try:
-            # No login-response element when login was successful
+            # No login-response element when login was successful -> exception is raised
             LResponseParent = self.FDriver.find_element_by_class_name('login-response')
             LErrorResponses = LResponseParent.find_elements_by_tag_name('p')
         except:
@@ -56,6 +57,26 @@ class Scraper:
         for LResponse in LErrorResponses:
             if LResponse.text != '':
                 raise Exception('Login error: ' + LResponse.text)
+    
+    def startScraper(self):
+        LPageNum = 3000
+        LValidPage = True
+
+        while(LValidPage):
+            self.FDriver.get(self.FDBLink + str(LPageNum))
+            time.sleep(3) # Todo: dynamic waiting
+
+            try:
+                LDownloadButtons = self.FDriver.find_elements_by_xpath('//*[@title="Herunterladen"]')
+                if len(LDownloadButtons) > 0:
+                    for LBtn in LDownloadButtons:
+                        LBtn.click()
+                else:
+                    LValidPage = False
+            except Exception as e:
+                print(e)
+
+            LPageNum += 1
 
     def stopScraper(self):
         self.FDriver.quit()
@@ -91,4 +112,5 @@ FCreds = CredentialReader()
 
 x = Scraper('ct', '')
 x.eFellowsLogin(FCreds.FEmail, FCreds.FPassword)
+x.startScraper()
 x.stopScraper()
