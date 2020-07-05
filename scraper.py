@@ -1,24 +1,46 @@
-class Scraper:
-    db_link = ''
-    
-    def __init__(self, databasename):
-        if databasename.upper() == 'CT':
-            self.db_link = 'https://heise.extdb.e-fellows.net/zeitschriften/ct/artikel-archiv'
-        elif databasename.upper() == 'IX':
-            self.db_link = 'https://heise.extdb.e-fellows.net/zeitschriften/ix/artikel-archiv'
-        else:
-            raise ValueError('Invalid database name: ' + databasename)
+from selenium import webdriver
+import os.path
 
-    def printLink(self):
-        print('Link: ' + self.db_link)
+class Scraper:
+    FDriver = ''
+    FDBLink = ''
+    FDownloadPath = ''
+    
+    def __init__(self, ADatabasename, ADownloadpath):
+        if ADatabasename.upper() == 'CT':
+            self.FDBLink = 'https://heise.extdb.e-fellows.net/zeitschriften/ct/artikel-archiv'
+        elif ADatabasename.upper() == 'IX':
+            self.FDBLink = 'https://heise.extdb.e-fellows.net/zeitschriften/ix/artikel-archiv'
+        else:
+            raise ValueError('Invalid database name: ' + ADatabasename)
+        
+        if ADownloadpath == '':
+            self.FDownloadPath = os.path.dirname(os.path.abspath(__file__)) + '\\' + 'Magazine'
+        else:
+            self.FDownloadPath = ADownloadpath
+
+    def createWebdriver(self):
+        # Profile settings
+        ffProfile = webdriver.FirefoxProfile()
+        ffProfile.set_preference("browser.download.folderList", 2)
+        ffProfile.set_preference("browser.download.manager.showWhenStarting", False)
+        ffProfile.set_preference("browser.download.dir", self.FDownloadPath)
+        ffProfile.set_preference("browser.helperApps.neverAsk.saveToDisk", ("application/pdf"))
+        ffProfile.set_preference("browser.helperApps.neverAsk.openFile", ("application/pdf"))
+        ffProfile.set_preference("pdfjs.disabled", True)
+        
+        self.FDriver = webdriver.Firefox(ffProfile)
+    
+    def eFellowsLogin(self, AEmail, APassword):
+        self.FDriver.get('https://www.e-fellows.net/')
+        
 
 class CredentialReader:
-    email = ''
-    password = ''
+    FEmail = ''
+    FPassword = ''
 
     def __init__(self):
         import json
-        import os.path
 
         jsoncreds = {}
         if not os.path.isfile('credentials.json'):
@@ -37,11 +59,7 @@ class CredentialReader:
             if (jsoncreds['email'] == '') or (jsoncreds['password'] == ''):
                 raise ValueError('No credentials in credentials.json provided!')
             else:
-                self.email = jsoncreds['email']
-                self.password = jsoncreds['password'] 
+                self.FEmail = jsoncreds['email']
+                self.FPassword = jsoncreds['password'] 
 
-x = Scraper('ct')
-
-y = CredentialReader()
-print('Email: ' + y.email)
-print('Password: ' + y.password)
+x = Scraper('ct', '')
